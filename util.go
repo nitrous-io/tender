@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"strconv"
 	"strings"
 )
 
-var portMap = map[string]int{
-	"http":  80,
-	"https": 443,
+var portMap = map[string]string{
+	"http":  "80",
+	"https": "443",
 }
 
 func isWebSocket(r *http.Request) bool {
@@ -20,9 +19,11 @@ func isWebSocket(r *http.Request) bool {
 
 // parsePort returns the port of an HTTP request. If there is no port specified
 // in the request, 80 or 443 (HTTPS) is assumed.
-func parsePort(req *http.Request) int {
-	if _, portStr, err := net.SplitHostPort(req.Host); err == nil {
-		if p, err := strconv.Atoi(portStr); err == nil {
+func parsePort(req *http.Request) string {
+	if _, p, err := net.SplitHostPort(req.Host); err == nil {
+		if p == "443" {
+			return req.FormValue("freighterd_port")
+		} else {
 			return p
 		}
 	}
@@ -35,7 +36,7 @@ func parsePort(req *http.Request) int {
 func hostToIP(req *http.Request, ip net.IP) string {
 	// Change Host to "IP:Port".
 	port := parsePort(req)
-	h := net.JoinHostPort(ip.String(), strconv.Itoa(int(port)))
+	h := net.JoinHostPort(ip.String(), port)
 	req.URL.Host = h
 	return h
 }

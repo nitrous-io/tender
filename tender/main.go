@@ -21,6 +21,7 @@ var (
 	baseDomain     string
 	tlsDomain      string
 	freighterdPort int
+	tenderPort     int
 	pubCACert      string
 	pubCAKey       string
 	privCACertPath string
@@ -30,8 +31,12 @@ var (
 // - ADDR: address that tender will listen to
 // - DATABASE_URL: url of the postgresql main database
 // - BASE_DOMAIN: base domain of the tender app i.e. .nitrousapp.com
+// - TENDER_PORT: port tender listens to.
 // - FREIGHTERD_PORT: public freighted port. The freighterd server itself
 // handles authentication so we dont need to handle it here
+// - PUB_CRT: public facing ssl cert that we bought
+// - PUB_KEY: the public facing ssl cert key
+// - PRI_CRT: self-signed private ssl for intra comms
 //
 // TODO: eventually we may look into etcd ( and co ) so we dont have to touch
 // the main database *because* latency
@@ -48,6 +53,7 @@ func main() {
 
 	// setup env variables
 	databaseURL = envStr("DATABASE_URL")
+	tenderPort = envInt("TENDER_PORT")
 	freighterdPort = envInt("FREIGHTERD_PORT")
 	baseDomain = envStr("BASE_DOMAIN")
 	tlsDomain = envStr("TLS_DOMAIN")
@@ -74,8 +80,8 @@ func main() {
 	}
 
 	// proxy freighterd ports
-	log.Printf("listen to port %d", freighterdPort)
-	err = http.ListenAndServeTLS(fmt.Sprintf(":%d", freighterdPort), pubCACert, pubCAKey, s)
+	log.Printf("tender started, listening on port %d", tenderPort)
+	err = http.ListenAndServeTLS(fmt.Sprintf(":%d", tenderPort), pubCACert, pubCAKey, s)
 	if err != nil {
 		log.Fatalf("tender: exit with error %s", err)
 	}

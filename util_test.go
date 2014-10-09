@@ -1,11 +1,11 @@
 package tender
 
 import (
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"net"
 	"net/http"
 	"net/url"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("util", func() {
@@ -14,11 +14,11 @@ var _ = Describe("util", func() {
 			testCases := []struct {
 				url  string
 				host string
-				port int
+				port string
 			}{
-				{"http://google.com", "google.com", 80},
-				{"https://google.com", "google.com", 443},
-				{"http://google.com:8000", "google.com:8000", 8000},
+				{"http://google.com", "google.com", "80"},
+				{"https://google.com", "google.com", "443"},
+				{"http://google.com:8000", "google.com:8000", "8000"},
 			}
 
 			for _, tc := range testCases {

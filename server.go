@@ -77,6 +77,22 @@ func NewServer(baseDomain, tlsDomain, databaseURL string, freighterdPort int, ca
 	return s, nil
 }
 
+// Returns a `http.Handler` proxies without TLS
+func NewHTTPServer(baseDomain, databaseURL string) (http.Handler, error) {
+	db, err := sql.Open("postgres", databaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to open a db connection %v", err)
+	}
+	if err := db.Ping(); err != nil {
+		return nil, fmt.Errorf("Failed to get a valid db connection %v", err)
+	}
+	s := &Server{
+		db:         db,
+		baseDomain: baseDomain,
+	}
+	return s, nil
+}
+
 // proxy the request to respected boxhost. We will switch the proxy strategy
 // depends on the type of the request
 // - if this is a normal HTTP, use `http.ReverseProxy`
@@ -102,9 +118,13 @@ func (s *Server) proxy(env *env, w http.ResponseWriter, r *http.Request) (err er
 	// serverName is the name we use to generate private certs on the host
 	// this must be the same as Hostname in
 	// https://github.com/nitrous-io/nitrous/blob/master/models/host/host.go
-	tlsConfig := &tls.Config{}
-	*tlsConfig = *s.tlsConfig
-	tlsConfig.ServerName = fmt.Sprintf("%s%s", hostName, s.tlsDomain)
+	var tlsConfig *tls.Config
+
+	if s.tlsConfig != nil {
+		tlsConfig = &tls.Config{}
+		*tlsConfig = *s.tlsConfig
+		tlsConfig.ServerName = fmt.Sprintf("%s%s", hostName, s.tlsDomain)
+	}
 
 	if isWebSocket(r) {
 		proxy.ProxyWebsocket(env.host, tlsConfig)(w, r)

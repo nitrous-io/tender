@@ -6,11 +6,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net"
-	"net/http"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/nitrous-io/tender"
 )
@@ -96,12 +93,12 @@ func main() {
 	}
 	log.Printf("listen to port from %d to %d", startPort, endPort)
 	for p := startPort; p <= endPort; p++ {
-		go serveTLS(p, tlsConfig, httpProxy)
+		go tender.ServeTLS(p, tlsConfig, httpProxy)
 	}
 
 	// proxy freighterd port
 	log.Printf("listen to port %d", freighterdPort)
-	serveTLS(freighterdPort, tlsConfig, httpsProxy)
+	tender.ServeTLS(freighterdPort, tlsConfig, httpsProxy)
 }
 
 func envStr(name string) string {
@@ -122,41 +119,4 @@ func envInt(name string) int {
 		panic(fmt.Sprintf("Invalid %s. Required integer, got %s", name, v))
 	}
 	return i
-}
-
-func serveTLS(port int, tlsConfig *tls.Config, s http.Handler) {
-	addr := fmt.Sprintf(":%d", port)
-	srv := &http.Server{
-		Addr:      addr,
-		Handler:   s,
-		TLSConfig: tlsConfig,
-	}
-
-	ln, err := net.Listen("tcp", addr)
-	if err != nil {
-		log.Fatalf("tender: Failed to listen to %q, error: %q", addr, err)
-	}
-
-	ln = tls.NewListener(tcpKeepAliveListener{ln.(*net.TCPListener)}, tlsConfig)
-	err = srv.Serve(ln)
-	log.Fatalf("tender: Failed to serve %q, error: %q", addr, err)
-
-}
-
-// tcpKeepAliveListener sets TCP keep-alive timeouts on accepted
-// connections. It's used by ListenAndServe and ListenAndServeTLS so
-// dead TCP connections (e.g. closing laptop mid-download) eventually
-// go away.
-type tcpKeepAliveListener struct {
-	*net.TCPListener
-}
-
-func (ln tcpKeepAliveListener) Accept() (c net.Conn, err error) {
-	tc, err := ln.AcceptTCP()
-	if err != nil {
-		return
-	}
-	tc.SetKeepAlive(true)
-	tc.SetKeepAlivePeriod(3 * time.Minute)
-	return tc, nil
 }

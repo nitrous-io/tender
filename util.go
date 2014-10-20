@@ -1,11 +1,13 @@
 package tender
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var (
@@ -95,4 +97,44 @@ func PortsRange(s, e string) (start int, end int, err error) {
 		end = ep
 	}
 	return start, end, nil
+}
+
+// Spin up a HTTPS Server listening to an address
+func ServeTLS(port int, tlsConfig *tls.Config, s http.Handler) error {
+	addr := fmt.Sprintf(":%d", port)
+	srv := &http.Server{
+		Addr:      addr,
+		Handler:   s,
+		TLSConfig: tlsConfig,
+	}
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		return fmt.Errorf("tender: Failed to listen to %q, error: %q", addr, err)
+	}
+	ln = tls.NewListener(tcpKeepAliveListener{ln.(*net.TCPListener)}, tlsConfig)
+	err = srv.Serve(ln)
+	if err != nil {
+		return fmt.Errorf("tender: Failed to serve %q, error: %q", addr, err)
+	}
+	return nil
+}
+
+// tcpKeepAliveListener sets TCP keep-alive timeouts on accepted
+// connections. It's used by ListenAndServe and ListenAndServeTLS so
+// dead TCP connections (e.g. closing laptop mid-download) eventually
+// go away.
+//
+// This is copied from net/http package
+type tcpKeepAliveListener struct {
+	*net.TCPListener
+}
+
+func (ln tcpKeepAliveListener) Accept() (c net.Conn, err error) {
+	tc, err := ln.AcceptTCP()
+	if err != nil {
+		return
+	}
+	tc.SetKeepAlive(true)
+	tc.SetKeepAlivePeriod(3 * time.Minute)
+	return tc, nil
 }

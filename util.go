@@ -8,6 +8,11 @@ import (
 	"strings"
 )
 
+var (
+	DefaultStartPort = 1024
+	DefaultEndPort   = 9999
+)
+
 var portMap = map[string]int{
 	"http":  80,
 	"https": 443,
@@ -66,4 +71,28 @@ func getHost(url, baseDomain string) (string, error) {
 		return splits[1], nil
 	}
 	return "", fmt.Errorf("Invalid format %s", url)
+}
+
+// portsRange converts start/end port string into number with sensible default
+func PortsRange(s, e string) (start int, end int, err error) {
+	if s == "" {
+		start = DefaultStartPort
+	} else {
+		sp, err := strconv.Atoi(s)
+		if err != nil {
+			return 0, 0, fmt.Errorf("Invalid start port %s. Error %s", s, err)
+		}
+		start = sp
+	}
+
+	if e == "" {
+		end = DefaultEndPort
+	} else {
+		ep, err := strconv.Atoi(e)
+		if err != nil {
+			return 0, 0, fmt.Errorf("Invalid end port %s. Error %s", e, err)
+		}
+		end = ep
+	}
+	return start, end, nil
 }

@@ -56,6 +56,8 @@ func main() {
 	pubCACert = envStr("PUB_CRT")
 	pubCAKey = envStr("PUB_KEY")
 	privCACertPath = envStr("PRI_CRT")
+	sp := os.Getenv("PREVIEW_START_PORT")
+	ep := os.Getenv("PREVIEW_END_PORT")
 
 	if baseDomain[0] != '.' {
 		panic("BASE_DOMAIN should start with .")
@@ -88,7 +90,10 @@ func main() {
 	}
 
 	// proxy port range for preview
-	startPort, endPort := previewPorts()
+	startPort, endPort, err := tender.PortsRange(sp, ep)
+	if err != nil {
+		log.Fatalf("tender: invalid ports, %q", err)
+	}
 	log.Printf("listen to port from %d to %d", startPort, endPort)
 	for p := startPort; p <= endPort; p++ {
 		go serveTLS(p, tlsConfig, httpProxy)
@@ -117,39 +122,6 @@ func envInt(name string) int {
 		panic(fmt.Sprintf("Invalid %s. Required integer, got %s", name, v))
 	}
 	return i
-}
-
-func previewPorts() (start, end int) {
-	s := os.Getenv("PREVIEW_START_PORT")
-	e := os.Getenv("PREVIEW_END_PORT")
-
-	if os.Getenv("DEBUG") == "true" {
-		start = 6666
-		end = 6666
-		return
-	}
-
-	if s == "" {
-		start = 1024
-	} else {
-		sp, err := strconv.Atoi(s)
-		if err != nil {
-			panic(fmt.Sprintf("Invalid PREVIEW_START_PORT. Need integer, got %s", s))
-		}
-		start = sp
-	}
-
-	if e == "" {
-		end = 9999
-	} else {
-		ep, err := strconv.Atoi(e)
-		if err != nil {
-			panic(fmt.Sprintf("Invalid PREVIEW_END_PORT. Need integer, got %s", e))
-		}
-		end = ep
-	}
-
-	return
 }
 
 func serveTLS(port int, tlsConfig *tls.Config, s http.Handler) {

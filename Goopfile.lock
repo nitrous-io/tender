@@ -1,5 +1,13 @@
-github.com/lib/pq #6d16a400975d186dbbf6334350fca31721b6efe5
-github.com/onsi/ginkgo/ginkgo #12446bbcc74950944c897e32ea99cc8d058f9c92
-github.com/onsi/gomega #036273e6f643552b16fe7a6464afd2ae0324992e
-github.com/ddollar/forego #73521422bea32cc8d14491b271bf96ebb2625a9c
+bitbucket.org/kardianos/osext #44140c5fc69ecf1102c5ef451d73cd98ef59b178
+github.com/daviddengcn/go-colortext #b5c0891944c2f150ccc9d02aecf51b76c14c2948
+github.com/ddollar/dist #f559761fd36c52dc90d7d2c0bc537e6d96b0edc5
+github.com/ddollar/forego #c4e99109975338734d9ff5798bdada4bd0159e34
+github.com/ddollar/go-update #4733469d35539f410e0e84552944fa0df7e72c98
 github.com/gorilla/websocket #a6f041ac33b84488bb44137d6866cd3c8706d792
+github.com/kr/binarydist #9955b0ab8708602d411341e55fffd7e0700f86bd
+github.com/kr/pretty #f31442d60e51465c69811e2107ae978868dbea5c
+github.com/kr/text #6807e777504f54ad073ecef66747de158294b639
+github.com/lib/pq #7175accbed18058468c07811f76440d6e8d7cf19
+github.com/onsi/ginkgo/ginkgo #v1.1.0
+github.com/onsi/gomega #v1.0
+github.com/subosito/gotenv #61aa1800e632021fa192da0379ddb78bbd5390d9

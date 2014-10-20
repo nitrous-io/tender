@@ -4,7 +4,6 @@ export APP=${1:?"app name is required"}
 export VERSION=${2:?"version is required"}
 
 docker run \
-  -v $(pwd):/opt/src/github.com/nitrous-io/tender \
   -w /opt/src/github.com/nitrous-io/tender \
   -it \
   $APP:$VERSION /bin/bash -c "./script/install-deps && ./script/test"

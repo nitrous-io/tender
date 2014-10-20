@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"strconv"
 
@@ -54,31 +53,52 @@ func main() {
 	pubCACert = envStr("PUB_CRT")
 	pubCAKey = envStr("PUB_KEY")
 	privCACertPath = envStr("PRI_CRT")
+	sp := os.Getenv("PREVIEW_START_PORT")
+	ep := os.Getenv("PREVIEW_END_PORT")
 
 	if baseDomain[0] != '.' {
 		panic("BASE_DOMAIN should start with .")
 	}
 
-	_, err := tls.LoadX509KeyPair(pubCACert, pubCAKey)
+	crt, err := tls.LoadX509KeyPair(pubCACert, pubCAKey)
 	if err != nil {
-		log.Fatalf("tender: Failed to load SSL certificates: %s", err)
+		log.Fatalf("tender: Failed to load SSL certificates: %q", err)
 	}
+
 	privCACert, err := ioutil.ReadFile(privCACertPath)
 	if err != nil {
 		log.Fatalf("tender: Failed to find private certificate: %s", privCACertPath)
 	}
 
-	s, err := tender.NewServer(baseDomain, tlsDomain, databaseURL, freighterdPort, privCACert)
+	httpProxy, err := tender.NewHTTPServer(baseDomain, databaseURL)
 	if err != nil {
-		log.Fatalf("tender: Failed to start tender server, %v", err)
+		log.Fatalf("tender: Failed to create http proxy %q", err)
 	}
 
-	// proxy freighterd ports
-	log.Printf("listen to port %d", freighterdPort)
-	err = http.ListenAndServeTLS(fmt.Sprintf(":%d", freighterdPort), pubCACert, pubCAKey, s)
+	httpsProxy, err := tender.NewServer(baseDomain, tlsDomain, databaseURL, freighterdPort, privCACert)
 	if err != nil {
-		log.Fatalf("tender: exit with error %s", err)
+		log.Fatalf("tender: Failed to create https proxy, %q", err)
 	}
+
+	// create tls config
+	tlsConfig := &tls.Config{
+		NextProtos:   []string{"http/1.1"},
+		Certificates: []tls.Certificate{crt},
+	}
+
+	// proxy port range for preview
+	startPort, endPort, err := tender.PortsRange(sp, ep)
+	if err != nil {
+		log.Fatalf("tender: invalid ports, %q", err)
+	}
+	log.Printf("listen to port from %d to %d", startPort, endPort)
+	for p := startPort; p <= endPort; p++ {
+		go tender.ServeTLS(p, tlsConfig, httpProxy)
+	}
+
+	// proxy freighterd port
+	log.Printf("listen to port %d", freighterdPort)
+	tender.ServeTLS(freighterdPort, tlsConfig, httpsProxy)
 }
 
 func envStr(name string) string {
